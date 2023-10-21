@@ -6,6 +6,8 @@ namespace Drone.Controllers
 {
     public class BlobController : Controller
     {
+        private static HashSet<char> s_Allowed = new(@"1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.");
+
         private record Chunk(long Start, long End, long TotalSize);
         private readonly PoorMansDb _poorMansDb;
         private readonly AzureAdClient _azureAdClient;
@@ -28,24 +30,32 @@ namespace Drone.Controllers
         [HttpPut("/upload/{filename}")]
         public async Task<IActionResult> Upload(string filename)
         {
+            filename = SafeFileName(filename);
             var token = await _azureAdClient.GetToken();
             var contentLength = HttpContext.Request.Headers.ContentLength;
             var contentRange = GetContentRange(HttpContext.Request.Headers["Content-Range"].Single());
 
             if (contentRange.Start == 0)
             {
-                //Filename = $"{RandomString(10)}.txt";
-                _poorMansDb.Db.Clear();
+                if (_poorMansDb.Db.TryGetValue(filename, out var value))
+                {
+                    value.Clear();
+                }
+                else
+                {
+                    _poorMansDb.Db[filename] = new Queue<string>();
+                }
+
             }
 
             var id = Base64UrlEncoder.Encode(Guid.NewGuid().ToString());
-            _poorMansDb.Db.Enqueue(id);
+            _poorMansDb.Db[filename].Enqueue(id);
             var contentType = HttpContext.Request.Headers.ContentType.Single();
             var result = await _azureBlobClient.PutBlock(contentType, filename, token, HttpContext.Request.Body, id);
 
             if (contentRange.End + 1 == contentRange.TotalSize)
             {
-                await _azureBlobClient.PutBlockList(filename, token, GetIds());
+                await _azureBlobClient.PutBlockList(filename, token, GetIds(filename));
             }
 
             return Ok();
@@ -53,11 +63,11 @@ namespace Drone.Controllers
 
         private static IActionResult Xml(string blobs) => new ContentResult { Content = blobs, ContentType = "application/xml", StatusCode = 200 };
 
-        private IEnumerable<string> GetIds()
+        private IEnumerable<string> GetIds(string filename)
         {
-            while (_poorMansDb.Db.Any())
+            while (_poorMansDb.Db[filename].Any())
             {
-                yield return _poorMansDb.Db.Dequeue();
+                yield return _poorMansDb.Db[filename].Dequeue();
             }
         }
 
@@ -71,5 +81,8 @@ namespace Drone.Controllers
             var b = a[1].Split('/');
             return new Chunk(long.Parse(a[0]), long.Parse(b[0]), long.Parse(b[1]));
         }
+
+
+        private string SafeFileName(string filename) => string.Concat(filename.Where(c => s_Allowed.Contains(c)));
     }
 }

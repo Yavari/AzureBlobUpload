@@ -2,6 +2,6 @@
 {
     public class PoorMansDb
     {
-        public Queue<string> Db { get; } = new();
+        public Dictionary<string, Queue<string>> Db { get; } = new();
     }
 }

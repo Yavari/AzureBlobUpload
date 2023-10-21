@@ -1,37 +1,39 @@
 const picker = document.getElementById('picker');
 picker.onchange = () => {
-    const endpoint = document.getElementById('location').value;
-    const file = picker.files[0];
+    for (var i = 0; i < picker.files.length; i++) {
+        console.log(picker.files[i]);
+        const file = picker.files[i];
+        const upload = UpChunk.createUpload({
+            endpoint: '/upload/' + file.name,
+            file,
+            chunkSize: 30720,
+            dynamicChunkSize: false,
+        });
 
-    const upload = UpChunk.createUpload({
-        endpoint,
-        file,
-        chunkSize: 30720,
-        dynamicChunkSize: false,
-    });
+        // subscribe to events
+        upload.on('error', err => {
+            console.error(`${file.name}: It all went wrong!`, err.detail);
+        });
 
-    // subscribe to events
-    upload.on('error', err => {
-        console.error('It all went wrong!', err.detail);
-    });
+        upload.on('progress', ({ detail: progress }) => {
+            console.log(`${file.name}: Progress: ${progress}%`);
+        });
 
-    upload.on('progress', ({ detail: progress }) => {
-        console.log(`Progress: ${progress}%`);
-    });
+        upload.on('attempt', ({ detail }) => {
+            console.log(`${file.name}: There was an attempt!`, detail);
+        });
 
-    upload.on('attempt', ({ detail }) => {
-        console.log('There was an attempt!', detail);
-    });
+        upload.on('attemptFailure', ({ detail }) => {
+            console.log(`${file.name}: The attempt failed!`, detail);
+        });
 
-    upload.on('attemptFailure', ({ detail }) => {
-        console.log('The attempt failed!', detail);
-    });
+        upload.on('chunkSuccess', ({ detail }) => {
+            console.log(`${file.name}: Chunk successfully uploaded!`, detail);
+        });
 
-    upload.on('chunkSuccess', ({ detail }) => {
-        console.log('Chunk successfully uploaded!', detail);
-    });
+        upload.on('success', () => {
+            console.log(`${file.name}: We did it!`);
+        });
+    }
 
-    upload.on('success', () => {
-        console.log('We did it!');
-    });
 };

@@ -1,6 +1,4 @@
-﻿@{
-}
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -9,14 +7,9 @@
 </head>
 
 <body>
-<h1>Upload a video</h1>
-
-<div id="player-container" style="display:none;"></div>
-    <input id="location" type="text" placeholder="url" value="/upload/filename.txt" />
-<input id="picker" type="file" />
-
+    <h1>Upload a video</h1>
+    <input id="picker" type="file" multiple="multiple" />
     <script src="~/js/upchunk.js"></script>
-<script src="https://unpkg.com/hls.js@0.11.0/dist/hls.js"></script>
-<script src="~/js/script.js"></script>
+    <script src="~/js/script.js"></script>
 </body>
 </html>
