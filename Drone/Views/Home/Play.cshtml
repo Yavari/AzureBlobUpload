@@ -1,0 +1,12 @@
+﻿@model Drone.Models.VideoViewModel
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+@foreach (var video in Model.Videos)
+{
+    <video width="300" controls src="@video"></video>
+    <br/>
+}
+
+
