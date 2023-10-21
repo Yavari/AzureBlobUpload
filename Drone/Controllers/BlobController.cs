@@ -7,8 +7,6 @@ namespace Drone.Controllers
     public class BlobController : Controller
     {
         private static HashSet<char> s_Allowed = new(@"1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.");
-
-        private record Chunk(long Start, long End, long TotalSize);
         private readonly PoorMansDb _poorMansDb;
         private readonly AzureAdClient _azureAdClient;
         private readonly AzureBlobClient _azureBlobClient;
@@ -43,19 +41,19 @@ namespace Drone.Controllers
                 }
                 else
                 {
-                    _poorMansDb.Db[filename] = new Queue<string>();
+                    _poorMansDb.Db[filename] = new List<PoorMansDb.MetaData>();
                 }
 
             }
 
             var id = Base64UrlEncoder.Encode(Guid.NewGuid().ToString());
-            _poorMansDb.Db[filename].Enqueue(id);
+            _poorMansDb.Db[filename].Add(new PoorMansDb.MetaData(contentRange, id));
             var contentType = HttpContext.Request.Headers.ContentType.Single();
             var result = await _azureBlobClient.PutBlock(contentType, filename, token, HttpContext.Request.Body, id);
 
-            if (contentRange.End + 1 == contentRange.TotalSize)
+            if (_poorMansDb.Db[filename].Sum(x => x.Chunk.End - x.Chunk.Start + 1) == contentRange.TotalSize)
             {
-                await _azureBlobClient.PutBlockList(filename, token, GetIds(filename));
+                await _azureBlobClient.PutBlockList(filename, token, _poorMansDb.Db[filename].OrderBy(x => x.Chunk.Start).Select(x => x.Hash));
             }
 
             return Ok();
@@ -63,15 +61,7 @@ namespace Drone.Controllers
 
         private static IActionResult Xml(string blobs) => new ContentResult { Content = blobs, ContentType = "application/xml", StatusCode = 200 };
 
-        private IEnumerable<string> GetIds(string filename)
-        {
-            while (_poorMansDb.Db[filename].Any())
-            {
-                yield return _poorMansDb.Db[filename].Dequeue();
-            }
-        }
-
-        private Chunk GetContentRange(string contentRange)
+        private PoorMansDb.Chunk GetContentRange(string contentRange)
         {
             if (!contentRange.StartsWith("bytes "))
                 throw new Exception($"Wrong format {contentRange}");
@@ -79,7 +69,7 @@ namespace Drone.Controllers
             contentRange = contentRange.Remove(0, 6);
             var a = contentRange.Split('-');
             var b = a[1].Split('/');
-            return new Chunk(long.Parse(a[0]), long.Parse(b[0]), long.Parse(b[1]));
+            return new PoorMansDb.Chunk(long.Parse(a[0]), long.Parse(b[0]), long.Parse(b[1]));
         }
 
 

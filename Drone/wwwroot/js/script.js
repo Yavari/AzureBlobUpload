@@ -1,7 +1,6 @@
 const picker = document.getElementById('picker');
 picker.onchange = () => {
     for (var i = 0; i < picker.files.length; i++) {
-        console.log(picker.files[i]);
         const file = picker.files[i];
         const upload = UpChunk.createUpload({
             endpoint: '/upload/' + file.name,
@@ -35,5 +34,4 @@ picker.onchange = () => {
             console.log(`${file.name}: We did it!`);
         });
     }
-
 };

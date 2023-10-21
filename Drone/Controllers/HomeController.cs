@@ -45,6 +45,7 @@ namespace Drone.Controllers
 
         private async Task<Uri> GetUris(Uri serviceUri, StorageSharedKeyCredential storageSharedKeyCredential, string filename)
         {
+            // var credential = new ClientSecretCredential(_adOptions.Value.Tenant, _adOptions.Value.ClientId, _adOptions.Value.ClientSecret);
             var blobServiceClient = new BlobServiceClient(serviceUri, storageSharedKeyCredential);
 
             var blobContainerClient = blobServiceClient.GetBlobContainerClient(_storageAccountOptions.Value.Container);
