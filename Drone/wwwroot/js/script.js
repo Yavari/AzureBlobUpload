@@ -1,12 +1,14 @@
 const picker = document.getElementById('picker');
 picker.onchange = () => {
     for (var i = 0; i < picker.files.length; i++) {
+        const startTime = new Date();
         const file = picker.files[i];
         const upload = UpChunk.createUpload({
             endpoint: '/upload/' + file.name,
             file,
-            chunkSize: 30720,
-            dynamicChunkSize: false,
+            chunkSize: 100 * 1024,//Kb * 1024 to get azure size
+            maxChunkSize: 1000 * 1024,//Kb * 1024 to get azure size
+            dynamicChunkSize: true,
         });
 
         // subscribe to events
@@ -31,7 +33,9 @@ picker.onchange = () => {
         });
 
         upload.on('success', () => {
-            console.log(`${file.name}: We did it!`);
+            endTime = new Date();
+            var seconds = Math.round((endTime - startTime) / 1000);
+            console.log(`${file.name}: We did it! in ${seconds} seconds`);
         });
     }
 };

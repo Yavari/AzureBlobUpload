@@ -1,10 +1,10 @@
-﻿using System;
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using Drone.Options;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Drone.Services
 {
@@ -20,30 +20,28 @@ namespace Drone.Services
             _httpClient = httpClient;
             _storageAccountOptions = storageAccountOptions;
         }
-        public async Task<bool> PutBlock(string contentType, string path, string token, Stream stream, string id)
+
+        public async Task<IEnumerable<string>> PutBlock(string contentType, string path, string token, Stream stream, long size)
         {
-            using var ms = new MemoryStream();
-            await stream.CopyToAsync(ms);
-            //https://stackoverflow.com/questions/67073448/azure-storage-rest-api-put-blob-api
+            var id = Base64UrlEncoder.Encode(Guid.NewGuid().ToString());
             var rootPath = $"https://{_storageAccountOptions.Value.AccountName}.blob.core.windows.net/{_storageAccountOptions.Value.Container}/";
             using var requestMessage = new HttpRequestMessage(HttpMethod.Put, $"{rootPath}{path}?comp=block&blockid={id}");
             var now = DateTime.UtcNow;
             requestMessage.Headers.Add("x-ms-date", now.ToString("R", CultureInfo.InvariantCulture));
             requestMessage.Headers.Add("x-ms-version", "2020-04-08");
-            //httpRequestMessage.Headers.Add("x-ms-blob-type", "BlockBlob");
-            //httpRequestMessage.Headers.Add("x-ms-blob-content-type", contentType);
-
-            // Can this be changed to stream?
-            requestMessage.Content = new ByteArrayContent(ms.ToArray());
+            requestMessage.Content = new StreamContent(stream);
+            requestMessage.Content.Headers.ContentLength = size;
             requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             using var httpResponseMessage = await _httpClient.SendAsync(requestMessage);
-            if (httpResponseMessage.StatusCode == HttpStatusCode.Created)
-                return true;
+            if (httpResponseMessage.StatusCode != HttpStatusCode.Created)
+            {
+                var a = httpResponseMessage.StatusCode;
+                var result = await httpResponseMessage.Content.ReadAsStringAsync();
+                throw new Exception(result);
+            }
 
-            var a = httpResponseMessage.StatusCode;
-            var result = await httpResponseMessage.Content.ReadAsStringAsync();
-            throw new Exception(result);
+            return new[] { id };
         }
 
         public async Task<string> GetBlockList(string path, string token)

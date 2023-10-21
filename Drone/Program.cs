@@ -6,6 +6,7 @@ namespace Drone
 {
     public class Program
     {
+        private const long MaxRequestSizeInMb = 1000;
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
@@ -14,7 +15,8 @@ namespace Drone
             builder.Services.AddControllersWithViews().AddRazorRuntimeCompilation();
             builder.Services.Configure<KestrelServerOptions>(options =>
             {
-                options.Limits.MaxRequestBodySize = int.MaxValue; // if don't set default value is: 30 MB
+                // if don't set default value is: 30 MB
+                options.Limits.MaxRequestBodySize = (MaxRequestSizeInMb + 1) * 1024 * 1024;
             });
 
             builder.Services.Configure<StorageAccountOptions>(builder.Configuration.GetSection(StorageAccountOptions.Position));
