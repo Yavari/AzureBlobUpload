@@ -81,11 +81,12 @@ namespace Drone.Services.AzureBlob
             }
         }
 
-        public async Task<bool> PutBlockList(string path, string token, IEnumerable<string> ids)
+        public async Task<bool> PutBlockList(string path, string token, string contentType, IEnumerable<string> ids)
         {
             var requestUri = $"{_storageAccountOptions.Value.ContainerPath}/{path}?comp=blocklist";
             using var requestMessage = new HttpRequestMessage(HttpMethod.Put, requestUri);
             requestMessage.Headers.Add("x-ms-version", "2020-04-08");
+            requestMessage.Headers.Add("x-ms-blob-content-type", contentType);
             requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var xml = @"
 <BlockList>

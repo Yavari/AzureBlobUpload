@@ -62,7 +62,7 @@ namespace Drone.Controllers
             if (_poorMansDb.Db[filename].Sum(x => x.Chunk.Size) == chunk.TotalSize)
             {
                 var hashes = _poorMansDb.Db[filename].OrderBy(x => x.Chunk.Start).Select(x => x.Hashes).SelectMany(x => x);
-                await _azureBlobClient.PutBlockList(filename, token, hashes);
+                await _azureBlobClient.PutBlockList(filename, token, contentType, hashes);
             }
 
             _logger.LogInformation("End upload");
