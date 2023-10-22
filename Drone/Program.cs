@@ -1,5 +1,6 @@
 using Drone.Options;
 using Drone.Services;
+using Drone.Services.AzureBlob;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace Drone

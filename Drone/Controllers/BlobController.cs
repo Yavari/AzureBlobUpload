@@ -1,4 +1,5 @@
 ﻿using Drone.Services;
+using Drone.Services.AzureBlob;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
@@ -26,7 +27,12 @@ namespace Drone.Controllers
         public IActionResult Index() => View();
         public async Task<IActionResult> List() => Xml(await _azureBlobClient.ListBlobs(await _azureAdClient.GetToken()));
         public async Task<IActionResult> BlockList(string filename) => Xml(await _azureBlobClient.GetBlockList(filename, await _azureAdClient.GetToken()));
-
+        public async Task<IActionResult> Delete(string filename) => Content((await _azureBlobClient.DeleteBlob(filename, await _azureAdClient.GetToken())).ToString());
+        public async Task<IActionResult> DeleteUncommitted()
+        {
+            await _azureBlobClient.DeleteUncommittedBlobs(await _azureAdClient.GetToken());
+            return Ok();
+        }
 
         [HttpPut("/upload/{filename}")]
         public async Task<IActionResult> Upload(string filename)
