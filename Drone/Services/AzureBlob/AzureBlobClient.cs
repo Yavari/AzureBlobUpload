@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.IO;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -11,13 +12,16 @@ namespace Drone.Services.AzureBlob
 {
     public class AzureBlobClient
     {
+        private readonly ILogger<AzureBlobClient> _logger;
         private readonly HttpClient _httpClient;
         private readonly IOptions<StorageAccountOptions> _storageAccountOptions;
 
         public AzureBlobClient(
+            ILogger<AzureBlobClient> logger,
             HttpClient httpClient,
             IOptions<StorageAccountOptions> storageAccountOptions)
         {
+            _logger = logger;
             _httpClient = httpClient;
             _storageAccountOptions = storageAccountOptions;
         }
@@ -115,6 +119,21 @@ namespace Drone.Services.AzureBlob
 
             var content = await responseMessage.Content.ReadAsStringAsync();
             return false;
+        }
+
+        public async Task<HttpResponseMessage> GetVideoStream(string url, string byteRange, string token)
+        {
+            _logger.LogInformation($"{url} {byteRange}");
+            var requestUri = $"{_storageAccountOptions.Value.ContainerPath}/{url}";
+            using var requestMessage = new HttpRequestMessage(HttpMethod.Get, requestUri);
+            requestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            requestMessage.Headers.Add("x-ms-version", "2020-04-08");
+            if (byteRange == "bytes=0-")
+            {
+                //byteRange = $"bytes=0-{4 * 1024 * 1024}";
+            }
+            requestMessage.Headers.Add("Range", byteRange);
+            return await _httpClient.SendAsync(requestMessage);
         }
     }
 }

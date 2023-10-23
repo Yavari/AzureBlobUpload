@@ -24,6 +24,7 @@ namespace Drone.Controllers
             _azureAdClient = azureAdClient;
             _azureBlobClient = azureBlobClient;
         }
+
         public IActionResult Index() => View();
         public async Task<IActionResult> List() => Xml(await _azureBlobClient.ListBlobs(await _azureAdClient.GetToken()));
         public async Task<IActionResult> BlockList(string filename) => Xml(await _azureBlobClient.GetBlockList(filename, await _azureAdClient.GetToken()));
@@ -75,7 +76,6 @@ namespace Drone.Controllers
             var end = long.Parse(b[0]);
             return new PoorMansDb.Chunk(start, end, end - start + 1, long.Parse(b[1]));
         }
-
 
         private string SafeFileName(string filename) => string.Concat(filename.Where(c => s_Allowed.Contains(c)));
     }
