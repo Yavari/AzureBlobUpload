@@ -6,9 +6,10 @@ picker.onchange = () => {
         const upload = UpChunk.createUpload({
             endpoint: '/upload/' + file.name,
             file,
-            chunkSize: 100 * 1024,//Kb * 1024 to get azure size
+            chunkSize: 40 * 1024,//Kb * 1024 to get azure size
             maxChunkSize: 1000 * 1024,//Kb * 1024 to get azure size
             dynamicChunkSize: true,
+            concurrentUploads: 10
         });
 
         // subscribe to events
@@ -21,7 +22,7 @@ picker.onchange = () => {
         });
 
         upload.on('attempt', ({ detail }) => {
-            console.log(`${file.name}: There was an attempt!`, detail);
+            console.log(`${file.name}: New upload!`, detail);
         });
 
         upload.on('attemptFailure', ({ detail }) => {

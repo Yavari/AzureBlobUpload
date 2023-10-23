@@ -37,25 +37,18 @@ namespace Drone.Controllers
         [HttpPut("/upload/{filename}")]
         public async Task<IActionResult> Upload(string filename)
         {
-            _logger.LogInformation("Start upload");
-            filename = SafeFileName(filename);
-            var token = await _azureAdClient.GetToken();
-            var contentLength = HttpContext.Request.Headers.ContentLength;
             var chunk = GetContentRange(HttpContext.Request.Headers["Content-Range"].Single());
-
+            filename = SafeFileName(filename);
             if (chunk.Start == 0)
             {
                 if (_poorMansDb.Db.TryGetValue(filename, out var value))
-                {
                     value.Clear();
-                }
                 else
-                {
                     _poorMansDb.Db[filename] = new List<PoorMansDb.MetaData>();
-                }
-
             }
 
+            var token = await _azureAdClient.GetToken();
+            var contentLength = HttpContext.Request.Headers.ContentLength;
             var contentType = HttpContext.Request.Headers.ContentType.Single();
             var ids = await _azureBlobClient.PutBlock(contentType, filename, token, HttpContext.Request.Body, chunk.Size);
             _poorMansDb.Db[filename].Add(new PoorMansDb.MetaData(chunk, ids.ToArray()));
@@ -65,7 +58,6 @@ namespace Drone.Controllers
                 await _azureBlobClient.PutBlockList(filename, token, contentType, hashes);
             }
 
-            _logger.LogInformation("End upload");
             return Ok();
         }
 
